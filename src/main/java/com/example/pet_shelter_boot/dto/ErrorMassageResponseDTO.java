@@ -7,7 +7,9 @@ public class ErrorMassageResponseDTO {
     private String detailedMassage;
     private LocalDateTime dateTime;
 
-    public ErrorMassageResponseDTO(String massage, String detailedMassage, LocalDateTime dateTime) {
+    public ErrorMassageResponseDTO(String massage,
+                                   String detailedMassage,
+                                   LocalDateTime dateTime) {
         this.massage = massage;
         this.detailedMassage = detailedMassage;
         this.dateTime = dateTime;

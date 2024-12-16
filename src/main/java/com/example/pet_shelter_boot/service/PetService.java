@@ -1,7 +1,11 @@
 package com.example.pet_shelter_boot.service;
 
-import com.example.pet_shelter_boot.dto.PetDTO;
+import com.example.pet_shelter_boot.converter.PetEntityConverter;
+import com.example.pet_shelter_boot.model.Pet;
+import com.example.pet_shelter_boot.repository.PetRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -9,51 +13,66 @@ import java.util.*;
 public class PetService {
 
     private final UserService userService;
+    private final PetEntityConverter petEntityConverter;
+    private final PetRepository petRepository;
 
-    private Long idCounter;
-    private final HashMap<Long, PetDTO> pets;
-
-    public PetService(UserService userService) {
+    public PetService(UserService userService,
+                      PetEntityConverter petEntityConverter,
+                      PetRepository petRepository) {
         this.userService = userService;
-        idCounter = 0L;
-        pets = new HashMap<>();
-    }
-    public List<PetDTO> getAll() {
-        return pets.values().stream().toList();
+        this.petEntityConverter = petEntityConverter;
+        this.petRepository = petRepository;
     }
 
-    public PetDTO getPetById(Long id) {
-        return Optional.ofNullable(pets.get(id)).orElseThrow(()
-                -> new NoSuchElementException("Такой питомец не найден = %s".formatted(id)));
+    public List<Pet> getAll() {
+        return petRepository.findAll()
+                .stream()
+                .map(petEntityConverter::toDomain)
+                .toList();
     }
 
-    public PetDTO createPet(PetDTO petToCreate) {
-        Long newId = ++idCounter;
-        PetDTO newPet = new PetDTO(
-                newId,
-                petToCreate.getName(),
-                petToCreate.getUserId()
+    public Pet getPetById(Long id) {
+        return petEntityConverter.toDomain(petRepository.findById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Такой питомец не найден = %s".formatted(id))));
+    }
+
+    public Pet createPet(Pet petToCreate) {
+        checkUserExistence(petToCreate.userId());
+        return petEntityConverter.toDomain(
+                petRepository.save(petEntityConverter.toEntity(petToCreate))
         );
-        userService.givePetToUser(newPet);
-        pets.put(newId, newPet);
-        return newPet;
     }
 
+    @Transactional
     public void deletePet(Long id) {
-        PetDTO petToRemove = pets.remove(getPetById(id).getId());
-        userService.takePetFromUser(petToRemove);
+        if (!petRepository.existsById(id)) {
+            throw new EntityNotFoundException("Такой питомец не найден = %s".formatted(id));
+        }
+        petRepository.deleteById(id);
     }
 
-    public PetDTO updatePet(PetDTO petToUpdate, Long id) {
-        PetDTO pet = getPetById(id);
-        userService.takePetFromUser(pet);
-        PetDTO updatedPet = new PetDTO(
+    @Transactional
+    public Pet updatePet(Pet petToUpdate, Long id) {
+        if (!petRepository.existsById(id)) {
+            throw new EntityNotFoundException(
+                    "Сущность не найдена id : %s".formatted(id));
+        }
+        checkUserExistence(petToUpdate.userId());
+
+        petRepository.updatePet(
                 id,
-                petToUpdate.getName(),
-                petToUpdate.getUserId()
+                petToUpdate.name(),
+                petToUpdate.userId()
         );
-        userService.givePetToUser(updatedPet);
-        pets.put(id, updatedPet);
-        return updatedPet;
+
+        return petEntityConverter.toDomain(
+                petRepository.findById(id).orElseThrow()
+        );
+
+    }
+
+    boolean checkUserExistence(Long id) {
+        return userService.isUserExists(id);
     }
 }

@@ -1,69 +1,75 @@
 package com.example.pet_shelter_boot.service;
 
-import com.example.pet_shelter_boot.dto.PetDTO;
-import com.example.pet_shelter_boot.dto.UserDTO;
+import com.example.pet_shelter_boot.converter.UserEntityConverter;
+import com.example.pet_shelter_boot.model.User;
+import com.example.pet_shelter_boot.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service
 public class UserService {
 
-    private Long idCounter;
-    private final HashMap<Long, UserDTO> users;
+    private final UserRepository userRepository;
+    private final UserEntityConverter userEntityConverter;
 
-    public UserService() {
-        idCounter = 0L;
-        users = new HashMap<>();
+    public UserService(UserRepository userRepository,
+                       UserEntityConverter userEntityConverter) {
+        this.userRepository = userRepository;
+        this.userEntityConverter = userEntityConverter;
     }
 
-    public List<UserDTO> getAll() {
-        return users.values().stream().toList();
+    public List<User> getAll() {
+        return userRepository.findAllWithPets()
+                .stream()
+                .map(userEntityConverter::toDomain)
+                .toList();
     }
 
-    public UserDTO getUserById(Long id) {
-        return Optional.ofNullable(users.get(id)).orElseThrow(()
-                -> new NoSuchElementException("Такой пользователь не найден = %s".formatted(id)));
+    public User getUserById(Long id) {
+        return userEntityConverter.toDomain(
+                userRepository.findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Сущность не найдена id : %s".formatted(id))));
     }
 
-    public UserDTO createUser(UserDTO userToCreate) {
-        Long newId = ++idCounter;
-        UserDTO newUser = new UserDTO(
-                newId,
-                userToCreate.getName(),
-                userToCreate.getEmail(),
-                userToCreate.getAge(),
-                new ArrayList<>()
+    public User createUser(User userToCreate) {
+        return userEntityConverter.toDomain(
+                userRepository
+                        .save(userEntityConverter.toEntity(userToCreate))
         );
-        users.put(newId, newUser);
-        return newUser;
     }
 
+    @Transactional
     public void deleteUser(Long id) {
-        users.remove(getUserById(id).getId());
+        isUserExists(id);
+        userRepository.deleteUserFromPets(id);
+        userRepository.deleteById(id);
     }
 
-    public UserDTO updateUser(UserDTO userToUpdate, Long id) {
-        getUserById(id);
-        UserDTO updatedUser = new UserDTO(
+    @Transactional
+    public User updateUser(User userToUpdate, Long id) {
+        isUserExists(id);
+        userRepository.updateUser(
                 id,
-                userToUpdate.getName(),
-                userToUpdate.getEmail(),
-                userToUpdate.getAge(),
-                userToUpdate.getPets()
+                userToUpdate.name(),
+                userToUpdate.email(),
+                userToUpdate.age()
         );
-        users.put(id, updatedUser);
-        return updatedUser;
+        return userEntityConverter.toDomain(
+                userRepository.findById(id).orElseThrow()
+        );
     }
 
-    public void givePetToUser(PetDTO pet){
-        UserDTO user = getUserById(pet.getUserId());
-        user.getPets().add(pet);
-    }
-
-    public void takePetFromUser(PetDTO pet){
-        UserDTO user = getUserById(pet.getUserId());
-        user.getPets().remove(pet);
+    boolean isUserExists(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new EntityNotFoundException(
+                    "Сущность не найдена id : %s".formatted(id));
+        } else {
+            return true;
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.pet_shelter_boot.controller;
 
+import com.example.pet_shelter_boot.converter.PetDtoConverter;
 import com.example.pet_shelter_boot.dto.PetDTO;
 import com.example.pet_shelter_boot.service.PetService;
 import jakarta.validation.Valid;
@@ -17,9 +18,11 @@ public class PetController {
 
     private final Logger logger = LoggerFactory.getLogger(PetController.class);
     private final PetService petService;
+    private final PetDtoConverter petDtoConverter;
 
-    public PetController(PetService petService) {
+    public PetController(PetService petService, PetDtoConverter petDtoConverter) {
         this.petService = petService;
+        this.petDtoConverter = petDtoConverter;
     }
 
     @GetMapping
@@ -27,7 +30,11 @@ public class PetController {
         logger.info("All entities requested from pets repository");
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(petService.getAll());
+                .body(petService.getAll()
+                        .stream()
+                        .map(petDtoConverter::toDto)
+                        .toList()
+                );
     }
 
     @GetMapping("/{id}")
@@ -37,7 +44,7 @@ public class PetController {
         logger.info("Attempt to request pet with id: %s".formatted(id));
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(petService.getPetById(id));
+                .body(petDtoConverter.toDto(petService.getPetById(id)));
     }
 
     @PostMapping
@@ -45,11 +52,13 @@ public class PetController {
             @RequestBody @Valid PetDTO petToCreate
     ) {
         logger.info("Attempt to create pet with name: %s and user_id : %d"
-                .formatted(petToCreate.getName(), petToCreate.getUserId()));
-        return ResponseEntity
+                .formatted(petToCreate.name(), petToCreate.userId()));
+        return (ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(petService.createPet(petToCreate));
+                .body(petDtoConverter.toDto(petService
+                        .createPet(petDtoConverter.toDomain(petToCreate)))));
     }
+
 
     @DeleteMapping("/{id}")
     public void deletePet(
@@ -67,6 +76,8 @@ public class PetController {
         logger.info("Attempt to update pet with id: %s".formatted(id));
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(petService.updatePet(petToUpdate, id));
+                .body(petDtoConverter.toDto(
+                        petService.updatePet(
+                                petDtoConverter.toDomain(petToUpdate), id)));
     }
 }

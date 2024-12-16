@@ -1,5 +1,6 @@
 package com.example.pet_shelter_boot.controller;
 
+import com.example.pet_shelter_boot.converter.UserDtoConverter;
 import com.example.pet_shelter_boot.dto.UserDTO;
 import com.example.pet_shelter_boot.service.UserService;
 import jakarta.validation.Valid;
@@ -11,15 +12,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/users")
 @RestController
+@RequestMapping("/users")
 public class UserController {
 
     private final Logger logger = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
+    private final UserDtoConverter userDtoConverter;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService,
+                          UserDtoConverter userDtoConverter) {
         this.userService = userService;
+        this.userDtoConverter = userDtoConverter;
     }
 
     @GetMapping
@@ -27,7 +31,12 @@ public class UserController {
         logger.info("All entities requested from user repository");
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(userService.getAll());
+                .body(
+                        userService.getAll()
+                                .stream()
+                                .map(userDtoConverter::toDto)
+                                .toList()
+                );
     }
 
     @GetMapping("/{id}")
@@ -37,7 +46,9 @@ public class UserController {
         logger.info("Attempt to request user with id: %s".formatted(id));
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(userService.getUserById(id));
+                .body(userDtoConverter
+                        .toDto(userService.getUserById(id))
+                );
     }
 
     @PostMapping
@@ -45,28 +56,37 @@ public class UserController {
             @RequestBody @Valid UserDTO userToCreate
     ) {
         logger.info("Attempt to create user with name: %s"
-                .formatted(userToCreate.getName()));
+                .formatted(userToCreate.name()));
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(userService.createUser(userToCreate));
+                .body(userDtoConverter.toDto(userService
+                                .createUser(userDtoConverter.toDomain(userToCreate))));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(
+    public ResponseEntity<Void> deleteUser(
             @PathVariable("id") Long id
     ) {
         logger.info("Attempt to delete user with id: %s".formatted(id));
         userService.deleteUser(id);
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserDTO> deleteUser(
+    public ResponseEntity<UserDTO> updateUser(
             @PathVariable("id") Long id,
             @RequestBody @Valid UserDTO userToUpdate
     ) {
         logger.info("Attempt to update user with id: %s".formatted(id));
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(userService.updateUser(userToUpdate, id));
+                .body(userDtoConverter.toDto(userService
+                        .updateUser(userDtoConverter
+                                .toDomain(userToUpdate), id
+                        )
+                ));
     }
 }

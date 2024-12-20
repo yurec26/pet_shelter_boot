@@ -9,7 +9,7 @@ public record PetDTO(
         @Null Long id,
 
         @Size(max = 30)
-        @NotBlank String name,
+        String name,
 
         @NotNull
         @JsonProperty("user_id")

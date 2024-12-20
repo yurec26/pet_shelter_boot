@@ -11,12 +11,12 @@ public interface PetRepository extends JpaRepository<PetEntity, Long> {
 
     @Transactional
     @Modifying
-    @Query("""
-            UPDATE PetEntity p
-            SET p.name =:name,
-                p.userId =:userId
-            WHERE p.id =:id
-            """)
+    @Query(value = """
+            UPDATE pets
+            SET name = CASE WHEN :name IS NOT NULL THEN :name ELSE name END,
+            user_id = CASE WHEN :userId IS NOT NULL THEN :userId ELSE user_id END
+            WHERE id = :id
+            """, nativeQuery = true)
     void updatePet(
             @Param("id") Long id,
             @Param("name") String name,

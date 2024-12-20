@@ -13,15 +13,12 @@ public record UserDTO(
         Long id,
 
         @Size(max = 30)
-        @NotBlank
         String name,
 
         @Email
-        @NotNull
         String email,
 
         @Positive
-        @NotNull
         Integer age,
 
         @Size(max = 0)

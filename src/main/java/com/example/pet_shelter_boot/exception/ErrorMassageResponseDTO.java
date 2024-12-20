@@ -1,4 +1,4 @@
-package com.example.pet_shelter_boot.dto;
+package com.example.pet_shelter_boot.exception;
 
 import java.time.LocalDateTime;
 

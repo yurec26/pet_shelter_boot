@@ -27,7 +27,7 @@ public class PetController {
 
     @GetMapping
     public ResponseEntity<List<PetDTO>> getAll() {
-        logger.info("All entities requested from pets repository");
+        logger.info("GET request with endpoint '/pets' received");
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(petService.getAll()
@@ -41,7 +41,7 @@ public class PetController {
     public ResponseEntity<PetDTO> getPetById(
             @PathVariable("id") Long id
     ) {
-        logger.info("Attempt to request pet with id: %s".formatted(id));
+        logger.info("GET request with endpoint '/pets/%s' received".formatted(id));
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(petDtoConverter.toDto(petService.getPetById(id)));
@@ -51,8 +51,8 @@ public class PetController {
     public ResponseEntity<PetDTO> createPet(
             @RequestBody @Valid PetDTO petToCreate
     ) {
-        logger.info("Attempt to create pet with name: %s and user_id : %d"
-                .formatted(petToCreate.name(), petToCreate.userId()));
+        logger.info("POST request with endpoint '/pets' and body '%s' received"
+                .formatted(petToCreate));
         return (ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(petDtoConverter.toDto(petService
@@ -64,7 +64,7 @@ public class PetController {
     public void deletePet(
             @PathVariable("id") Long id
     ) {
-        logger.info("Attempt to delete pet with id: %s".formatted(id));
+        logger.info("DELETE request with endpoint 'pets/%s' received".formatted(id));
         petService.deletePet(id);
     }
 
@@ -73,7 +73,8 @@ public class PetController {
             @PathVariable("id") Long id,
             @RequestBody @Valid PetDTO petToUpdate
     ) {
-        logger.info("Attempt to update pet with id: %s".formatted(id));
+        logger.info("PUT request with endpoint '/pets/%s' and body '%s' received"
+                .formatted(id, petToUpdate));
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(petDtoConverter.toDto(

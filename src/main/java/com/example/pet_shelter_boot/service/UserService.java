@@ -5,7 +5,6 @@ import com.example.pet_shelter_boot.model.User;
 import com.example.pet_shelter_boot.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -42,16 +41,14 @@ public class UserService {
         );
     }
 
-    @Transactional
     public void deleteUser(Long id) {
-        isUserExists(id);
-        userRepository.deleteUserFromPets(id);
+        throwOnUserDoesNotExist(id);
+        throwOnUserHasPets(id);
         userRepository.deleteById(id);
     }
 
-    @Transactional
     public User updateUser(User userToUpdate, Long id) {
-        isUserExists(id);
+        throwOnUserDoesNotExist(id);
         userRepository.updateUser(
                 id,
                 userToUpdate.name(),
@@ -63,12 +60,19 @@ public class UserService {
         );
     }
 
-    boolean isUserExists(Long id) {
+    void throwOnUserDoesNotExist(Long id) {
         if (!userRepository.existsById(id)) {
             throw new EntityNotFoundException(
                     "Сущность не найдена id : %s".formatted(id));
-        } else {
-            return true;
+        }
+    }
+
+    void throwOnUserHasPets(Long id) {
+        User user = userEntityConverter
+                .toDomain(userRepository.findById(id).orElseThrow());
+        if (!user.pets().isEmpty()) {
+            throw new IllegalArgumentException
+                    ("У пользователя есть питомцы, сначала раздайте их другим");
         }
     }
 }

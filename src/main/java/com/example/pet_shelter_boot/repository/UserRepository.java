@@ -21,13 +21,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Transactional
     @Modifying
-    @Query("""
-            UPDATE UserEntity u
-            SET u.name =:name,
-                u.email =:email,
-                u.age =:age
-            WHERE u.id =:id
-            """)
+    @Query(value = """
+            UPDATE users
+            SET name = CASE WHEN :name IS NOT NULL THEN :name ELSE name END,
+            email = CASE WHEN :email IS NOT NULL THEN :email ELSE email END,
+            age = CASE WHEN :age IS NOT NULL THEN :age ELSE age END
+            WHERE id = :id
+            """, nativeQuery = true)
     void updateUser(
             @Param("id") Long id,
             @Param("name") String name,
@@ -35,12 +35,4 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
             @Param("age") Integer age
     );
 
-    @Transactional
-    @Modifying
-    @Query("""
-            UPDATE PetEntity p
-            SET p.userId = Null
-            WHERE p.userId = :id
-            """)
-    void deleteUserFromPets(Long id);
 }

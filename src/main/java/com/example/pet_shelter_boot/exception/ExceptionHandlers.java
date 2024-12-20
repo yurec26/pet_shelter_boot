@@ -1,6 +1,5 @@
-package com.example.pet_shelter_boot.handler;
+package com.example.pet_shelter_boot.exception;
 
-import com.example.pet_shelter_boot.dto.ErrorMassageResponseDTO;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -37,19 +36,6 @@ public class ExceptionHandlers {
                 .body(error);
     }
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ErrorMassageResponseDTO> handleNoFoundException(
-            NoSuchElementException e
-    ) {
-        ErrorMassageResponseDTO error = new ErrorMassageResponseDTO(
-                "Такая сущность не найдена",
-                e.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(error);
-    }
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorMassageResponseDTO> handleServerException(
@@ -57,7 +43,7 @@ public class ExceptionHandlers {
     ) {
         ErrorMassageResponseDTO error = new ErrorMassageResponseDTO(
                 "Ошибка на сервере",
-                e.getMessage(),
+                "Обратитесь в службу поддержки сервиса",
                 LocalDateTime.now()
         );
         return ResponseEntity
@@ -79,9 +65,10 @@ public class ExceptionHandlers {
                 .body(error);
     }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ExceptionHandler({DataIntegrityViolationException.class,
+            IllegalArgumentException.class})
     public ResponseEntity<ErrorMassageResponseDTO> handleIntegrityException(
-            DataIntegrityViolationException e
+            Exception e
     ) {
         ErrorMassageResponseDTO error = new ErrorMassageResponseDTO(
                 "Запрос неправильный",

@@ -28,7 +28,7 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAll() {
-        logger.info("All entities requested from user repository");
+        logger.info("GET request with endpoint '/users' received");
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(
@@ -43,7 +43,7 @@ public class UserController {
     public ResponseEntity<UserDTO> getUserById(
             @PathVariable("id") Long id
     ) {
-        logger.info("Attempt to request user with id: %s".formatted(id));
+        logger.info("GET request with endpoint '/users/%s' received".formatted(id));
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(userDtoConverter
@@ -55,20 +55,20 @@ public class UserController {
     public ResponseEntity<UserDTO> createUser(
             @RequestBody @Valid UserDTO userToCreate
     ) {
-        logger.info("Attempt to create user with name: %s"
-                .formatted(userToCreate.name()));
+        logger.info("POST request with endpoint '/users' and body '%s' received"
+                .formatted(userToCreate));
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(userDtoConverter.toDto(userService
-                                .createUser(userDtoConverter.toDomain(userToCreate))));
+                        .createUser(userDtoConverter.toDomain(userToCreate))));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(
             @PathVariable("id") Long id
     ) {
-        logger.info("Attempt to delete user with id: %s".formatted(id));
+        logger.info("DELETE request with endpoint 'users/%s' received".formatted(id));
         userService.deleteUser(id);
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
@@ -80,7 +80,8 @@ public class UserController {
             @PathVariable("id") Long id,
             @RequestBody @Valid UserDTO userToUpdate
     ) {
-        logger.info("Attempt to update user with id: %s".formatted(id));
+        logger.info("PUT request with endpoint '/users/%s' and body '%s' received"
+                .formatted(id, userToUpdate));
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(userDtoConverter.toDto(userService
